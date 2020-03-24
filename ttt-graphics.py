@@ -64,7 +64,7 @@ class movement :
 
 
     @staticmethod
-    def no_move () :
+    def empty_function ( *args ) :
         pass
 
 
@@ -81,7 +81,7 @@ def cursor_movement ( scr = curses.initscr() ) :
 
     keypress = scr.getch()
 
-    move = movement.switcher.get ( keypress , None )
+    move = movement.switcher.get ( keypress , movement.empty_function )
 
     move ( scr )
 
