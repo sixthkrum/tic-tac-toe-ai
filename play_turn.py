@@ -53,19 +53,29 @@ def move_right ( scr = curses.initscr() ) :
     scr.refresh()
 
 
-def place_mark ( scr = curses.initscr() ) :
+int_to_mark_switcher = {
+0 : "o" ,
+1 : "x"
+}
 
-    global _move_count
+
+def place_mark ( scr = curses.initscr() ) :
 
     [ y , x ] = scr.getyx()
 
-    scr.addstr ( str ( _move_count % 2 ) )
+    if chr ( scr.inch ( y , x ) ) == " " :
 
-    scr.move ( y , x )
+        global _move_count
 
-    _move_count = _move_count + 1
+        scr.addstr ( int_to_mark_switcher.get ( _move_count % 2 ) )
 
-    raise turn_completed()
+        scr.move ( y , x )
+
+        _move_count = _move_count + 1
+
+        return True
+
+    return False
 
 
 def empty_function ( *args ) :
@@ -73,7 +83,54 @@ def empty_function ( *args ) :
     pass
 
 
-switcher = {
+
+mark_to_int_switcher = {
+"o" : -1 ,
+"x" : 1 ,
+" " : 0
+}
+
+
+def check_win ( scr = curses.initscr() ) :
+
+# checking horizontals and verticals with h and v diagnol and anti-diagnol with d and ad
+
+    total_d = 0
+    total_ad = 0
+
+    for j in range ( 3 ) :
+
+        total_d = total_d + mark_to_int_switcher.get ( chr ( scr.inch ( j * 2 , 2 + j * 4 ) ) )
+        total_ad = total_ad + mark_to_int_switcher.get ( chr ( scr.inch ( j * 2 , 2 + ( 2 - j ) * 4 ) ) )
+
+        total_h = 0
+        total_v = 0
+
+        for i in range ( 3 ) :
+
+            total_h = total_h + mark_to_int_switcher.get ( chr ( scr.inch ( j * 2 , 2 + i * 4 ) ) )
+            total_v = total_v + mark_to_int_switcher.get ( chr ( scr.inch ( i * 2 , 2 + j * 4 ) ) )
+
+        if total_h == -3 or total_v == -3 :
+
+            return -1
+
+        elif total_h == 3 or total_v == 3 :
+
+            return 1
+
+    if total_d == -3 or total_ad == -3 :
+
+        return -1
+
+    elif total_d == 3 or total_ad == 3 :
+
+        return 1
+
+    return 0
+
+
+move_switcher = {
 curses.KEY_UP : move_up ,
 curses.KEY_DOWN : move_down ,
 curses.KEY_LEFT : move_left ,
@@ -88,12 +145,27 @@ def play_move ( scr = curses.initscr() ) :
 
     scr.move ( 0 , 2 )
 
-    try :
-        while True :
+    while True :
 
-            keypress = scr.getch()
-            move = switcher.get ( keypress , empty_function )
-            move ( scr )
+        keypress = scr.getch()
+        move = move_switcher.get ( keypress , empty_function )
+        check_turn_end = move ( scr )
 
-    except turn_completed :
-        scr.addstr ( 6 , 0 , "move no. {}".format ( _move_count ) )
+        if check_turn_end == True :
+
+            scr.addstr ( 6 , 0 , "move no. {}".format ( _move_count ) )
+
+            return check_win ( scr )
+
+
+def check_full ( scr = curses.initscr() ) :
+
+    for j in range ( 0 , 5 , 2 ) :
+
+        for i in range ( 2 , 11 , 4 ) :
+
+            if chr ( scr.inch ( j , i ) ) == " " :
+
+                return 0
+
+    return 1
